@@ -1,0 +1,30 @@
+.voicepopup{
+    min-width: 70% !important;
+    max-width: 80% !important;
+    position: fixed !important;
+    line-height: 1.4em;
+    font-size: 1.1em;
+    margin-bottom: 10px;
+}
+
+.voicepopup img{
+    float: left;
+    width: 270px;
+    height: auto;
+    margin: 3px 15px 3px 3px;
+}
+
+.voice-title{
+    font-size: 1.4em;
+    font-weight: bold;
+    text-align: center;
+    margin: 5px 10px 0 0;
+    display: block;
+}
+
+.rjcode{
+    text-align: center;
+    font-size: 1.2em;
+    font-style: italic;
+    opacity: 0.3;
+}
