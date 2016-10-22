@@ -4,7 +4,7 @@
 // @description Makes RJ codes more useful.
 // @include     https://boards.4chan.org/*
 // @include     http://boards.4chan.org/*
-// @version     1.1.1
+// @version     1.1.2
 // @grant       GM_xmlhttpRequest
 // @run-at      document-start
 // ==/UserScript==
@@ -124,8 +124,8 @@
 
   DLsite = {
     request: function(popup, rj){
-      var url, dom, table_outline, row, row_text, data,
-          title, circle, img, date, tags, rating;
+      var url, dom, table_outline, row, row_text, data, spec_list,
+          title, circle, img, date, tags, rating, filesize;
       url = "http://www.dlsite.com/maniax/work/=/product_id/"+rj+".html";
       GM_xmlhttpRequest({
         method: "GET",
@@ -162,7 +162,12 @@
                   break;
               }
             }
-            Popup.filldiv(popup, rj, img, title, circle, date, rating, tags);
+            spec_list = dom.querySelectorAll(".work_spec_list dd")[1].firstChild.nodeValue;
+            if(spec_list.includes("総計"))
+              filesize = spec_list.replace("総計", "").trim();
+            else
+              filesize = spec_list.substring(spec_list.lastIndexOf("/")+1, spec_list.lastIndexOf("(")).trim();
+            Popup.filldiv(popup, rj, img, title, circle, date, rating, tags, filesize);
           }
         }
       });
@@ -179,7 +184,7 @@
       document.body.appendChild(div);
       DLsite.request(div, rj);
     },
-    filldiv: function(div, rj, img, title, circle, date, rating, tags){
+    filldiv: function(div, rj, img, title, circle, date, rating, tags, filesize){
       div.innerHTML = [
       "<img src = 'http://"+img+"'></img>",
       "<div class = 'voice-title'>"+title+"</div>",
@@ -191,7 +196,9 @@
       "<br>",
       "Age Rating: <a>"+rating+"</a>",
       "<br>",
-      "Tags: "+tags].join("");
+      "Tags: "+tags,
+      "<br>",
+      "File Size: "+filesize].join("");
       if(div.className.includes("init")){
         var style;
         div.className = div.className.replace("init", "");
