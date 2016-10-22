@@ -4,7 +4,7 @@
 // @description Makes RJ codes more useful.
 // @include     https://boards.4chan.org/*
 // @include     http://boards.4chan.org/*
-// @version     1.1.0
+// @version     1.1.1
 // @grant       GM_xmlhttpRequest
 // @run-at      document-start
 // ==/UserScript==
@@ -106,14 +106,15 @@
       Parser.process(elem);
     },
     process: function(elem){
-      var voicelinks, voicelink;
+      var voicelinks, voicelink, rj;
       voicelinks = elem.querySelectorAll(".voicelinkunprocessed");
       for(var i = 0, ii = voicelinks.length; i<ii; i++)
       {
         voicelink = voicelinks[i];
-        voicelink.href = "http://www.dlsite.com/maniax/work/=/product_id/"+voicelink.innerText+".html";
+        rj = voicelink.innerText.toUpperCase();
+        voicelink.href = "http://www.dlsite.com/maniax/work/=/product_id/"+rj+".html";
         voicelink.className = "voicelinked";
-        voicelink.id = voicelink.innerText;
+        voicelink.id = rj;
         voicelink.addEventListener("mouseover", Popup.over);
         voicelink.addEventListener("mouseout", Popup.out);
         voicelink.addEventListener("mousemove", Popup.move);
