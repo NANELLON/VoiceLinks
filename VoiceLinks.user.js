@@ -6,6 +6,8 @@
 // @include     http://boards.4chan.org/*
 // @version     1.1.2
 // @grant       GM_xmlhttpRequest
+// @updateURL   https://github.com/Sanyarin/VoiceLinks/raw/master/VoiceLinks.user.js
+// @downloadURL https://github.com/Sanyarin/VoiceLinks/raw/master/VoiceLinks.user.js
 // @run-at      document-start
 // ==/UserScript==
 
