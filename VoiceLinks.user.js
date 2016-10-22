@@ -4,7 +4,7 @@
 // @description Makes RJ codes more useful.
 // @include     https://boards.4chan.org/*
 // @include     http://boards.4chan.org/*
-// @version     1.0.6
+// @version     1.1.0
 // @grant       GM_xmlhttpRequest
 // @run-at      document-start
 // ==/UserScript==
@@ -122,7 +122,7 @@
   };
 
   DLsite = {
-    request: function(rj){
+    request: function(popup, rj){
       var url, dom, table_outline, row, row_text, data,
           title, circle, img, date, tags, rating;
       url = "http://www.dlsite.com/maniax/work/=/product_id/"+rj+".html";
@@ -161,7 +161,7 @@
                   break;
               }
             }
-            Popup.makediv(rj, img, title, circle, date, rating, tags);
+            Popup.filldiv(popup, rj, img, title, circle, date, rating, tags);
           }
         }
       });
@@ -169,11 +169,16 @@
   };
 
   Popup = {
-    makediv: function(rj, img, title, circle, date, rating, tags){
+    makediv : function(rj){
       var div;
       div = document.createElement("div");
-      div.className = "voicepopup post reply";
+      div.className = "voicepopup post reply init";
       div.id = "voice-" + rj;
+      div.setAttribute("style", "display: none !important");
+      document.body.appendChild(div);
+      DLsite.request(div, rj);
+    },
+    filldiv: function(div, rj, img, title, circle, date, rating, tags){
       div.innerHTML = [
       "<img src = 'http://"+img+"'></img>",
       "<div class = 'voice-title'>"+title+"</div>",
@@ -186,8 +191,13 @@
       "Age Rating: <a>"+rating+"</a>",
       "<br>",
       "Tags: "+tags].join("");
-      div.setAttribute("style", "display: table !important");
-      document.body.appendChild(div);
+      if(div.className.includes("init")){
+        var style;
+        div.className = div.className.replace("init", "");
+        style = div.getAttribute("style");
+        style = style.replace("none", "table");
+        div.setAttribute("style", style);
+      }
     },
     over: function(ev){
       var rj, popup, style;
@@ -198,7 +208,7 @@
         style = style.replace("none", "table");
         popup.setAttribute("style", style);
       } else {
-        DLsite.request(rj);
+        Popup.makediv(rj);
       }
     },
     out: function(ev){
@@ -206,6 +216,8 @@
       rj = ev.target.id;
       popup = document.querySelector("div#voice-"+rj);
       if(popup){
+        if(popup.className.includes("init"))
+          popup.className = popup.className.replace("init", "");
         style = popup.getAttribute("style");
         style = style.replace("table", "none");
         popup.setAttribute("style", style);
