@@ -4,7 +4,7 @@
 // @description Makes RJ codes more useful.
 // @include     https://boards.4chan.org/*
 // @include     http://boards.4chan.org/*
-// @version     1.1.2
+// @version     1.1.3
 // @grant       GM_xmlhttpRequest
 // @updateURL   https://github.com/Sanyarin/VoiceLinks/raw/master/VoiceLinks.user.js
 // @downloadURL https://github.com/Sanyarin/VoiceLinks/raw/master/VoiceLinks.user.js
@@ -122,6 +122,17 @@
         voicelink.addEventListener("mousemove", Popup.move);
       }
     },
+    rebindevent: function(elem){
+      var voicelinks, voicelink;
+      voicelinks = elem.querySelectorAll(".voicelinked");
+      for(var i = 0, ii = voicelinks.length; i<ii; i++)
+      {
+        voicelink = voicelinks[i];
+        voicelink.addEventListener("mouseover", Popup.over);
+        voicelink.addEventListener("mouseout", Popup.out);
+        voicelink.addEventListener("mousemove", Popup.move);
+      }
+    }
   };
 
   DLsite = {
@@ -211,7 +222,7 @@
     },
     over: function(ev){
       var rj, popup, style;
-      rj = ev.target.id;
+      rj = ev.target.innerText.toUpperCase();
       popup = document.querySelector("div#voice-"+rj);
       if(popup){
         style = popup.getAttribute("style");
@@ -223,7 +234,7 @@
     },
     out: function(ev){
       var rj, popup, style;
-      rj = ev.target.id;
+      rj = ev.target.innerText.toUpperCase();
       popup = document.querySelector("div#voice-"+rj);
       if(popup){
         if(popup.className.includes("init"))
@@ -235,7 +246,7 @@
     },
     move: function(ev){
       var rj, popup, style;
-      rj = ev.target.id;
+      rj = ev.target.innerText.toUpperCase();
       popup = document.querySelector("div#voice-"+rj);
       if(popup){
         if(popup.offsetWidth + ev.clientX + 10 < window.innerWidth - 10)
@@ -263,8 +274,12 @@
         for(var j = 0, jj = nodes.length; j<jj; j++)
         {
           node = nodes[j];
-          if(node.nodeName === "DIV" && node.classList.contains("postContainer"))
-            Parser.linkify(node);
+          if(node.nodeName === "DIV"){
+            if(node.classList.contains("postContainer"))
+              Parser.linkify(node);
+            if(node.classList.contains("inline"))
+              Parser.rebindevent(node);
+          }
         }
       }
     },
