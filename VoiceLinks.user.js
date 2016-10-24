@@ -136,9 +136,43 @@
   };
 
   DLsite = {
+    parser: function(dom, popup, rj){
+      var work_name, table_outline, row, row_text, data, spec_list,
+          work_info = {};
+      work_info.rj = rj;
+      work_info.img = dom.querySelector("div#work_visual").style["background-image"].slice(7, -2);
+      work_name = dom.querySelector("h1#work_name").childNodes[1];
+      work_info.title = work_name.childNodes[work_name.childNodes.length - 1].nodeValue;
+      work_info.circle = dom.querySelector("span.maker_name").innerText;
+      table_outline = dom.querySelector("table#work_outline");
+      for(var i = 0, ii = table_outline.rows.length; i<ii; i++)
+      {
+        row = table_outline.rows[i];
+        row_text = row.innerText;
+        data = row.cells[1].innerText;
+        switch(true){
+          case (row_text.includes("販売日")):
+            work_info.date = data;
+            break;
+          case (row_text.includes("年齢指定")):
+            work_info.rating = data;
+            break;
+          case (row_text.includes("ジャンル")):
+            work_info.tags = data;
+            break;
+          default:
+            break;
+        }
+      }
+      spec_list = dom.querySelectorAll(".work_spec_list dd")[1].firstChild.nodeValue;
+      if(spec_list.includes("総計"))
+        work_info.filesize = spec_list.replace("総計", "").trim();
+      else
+        work_info.filesize = spec_list.substring(spec_list.lastIndexOf("/")+1, spec_list.lastIndexOf("(")).trim();
+      Popup.filldiv(popup, work_info);
+    },
     request: function(popup, rj){
-      var url, dom, table_outline, row, row_text, data, spec_list,
-          title, circle, img, date, tags, rating, filesize;
+      var url, parser, work_info = {};
       url = "http://www.dlsite.com/maniax/work/=/product_id/"+rj+".html";
       GM_xmlhttpRequest({
         method: "GET",
@@ -148,39 +182,9 @@
         "Accept": "text/xml"
         },
         onload: function(resp){
-          if(resp.readyState === 4 && resp.status === 200)
-          {
-            dom = new DOMParser().parseFromString(resp.responseText, "text/html");
-            img = dom.querySelector("div#work_visual").style["background-image"].slice(7, -2);
-            title = dom.querySelector("h1#work_name").childNodes[1];
-            title = title.childNodes[title.childNodes.length - 1].nodeValue;
-            circle = dom.querySelector("span.maker_name").innerText;
-            table_outline = dom.querySelector("table#work_outline");
-            for(var i = 0, ii = table_outline.rows.length; i<ii; i++)
-            {
-              row = table_outline.rows[i];
-              row_text = row.innerText;
-              data = row.cells[1].innerText;
-              switch(true){
-                case (row_text.includes("販売日")):
-                  date = data;
-                  break;
-                case (row_text.includes("年齢指定")):
-                  rating = data;
-                  break;
-                case (row_text.includes("ジャンル")):
-                  tags = data;
-                  break;
-                default:
-                  break;
-              }
-            }
-            spec_list = dom.querySelectorAll(".work_spec_list dd")[1].firstChild.nodeValue;
-            if(spec_list.includes("総計"))
-              filesize = spec_list.replace("総計", "").trim();
-            else
-              filesize = spec_list.substring(spec_list.lastIndexOf("/")+1, spec_list.lastIndexOf("(")).trim();
-            Popup.filldiv(popup, rj, img, title, circle, date, rating, tags, filesize);
+          if(resp.readyState === 4 && resp.status === 200){
+            var dom = new DOMParser().parseFromString(resp.responseText, "text/html");
+            DLsite.parser(dom, popup, rj);
           }
         }
       });
@@ -197,21 +201,21 @@
       document.body.appendChild(div);
       DLsite.request(div, rj);
     },
-    filldiv: function(div, rj, img, title, circle, date, rating, tags, filesize){
+    filldiv: function(div, work_info){
       div.innerHTML = [
-      "<img src = 'http://"+img+"'></img>",
-      "<div class = 'voice-title'>"+title+"</div>",
-      "<div class = 'rjcode'>["+rj+"]</div>",
+      "<img src = 'http://"+work_info.img+"'></img>",
+      "<div class = 'voice-title'>"+work_info.title+"</div>",
+      "<div class = 'rjcode'>["+work_info.rj+"]</div>",
       "<br>",
-      "Circle: <a>"+circle+"</a>",
+      "Circle: <a>"+work_info.circle+"</a>",
       "<br>",
-      "Release: <a>"+date+"</a>",
+      "Release: <a>"+work_info.date+"</a>",
       "<br>",
-      "Age Rating: <a>"+rating+"</a>",
+      "Age Rating: <a>"+work_info.rating+"</a>",
       "<br>",
-      "Tags: "+tags,
+      "Tags: "+work_info.tags,
       "<br>",
-      "File Size: "+filesize].join("");
+      "File Size: "+work_info.filesize].join("");
       if(div.className.includes("init")){
         var style;
         div.className = div.className.replace("init", "");
