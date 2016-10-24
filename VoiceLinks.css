@@ -28,3 +28,9 @@
     font-style: italic;
     opacity: 0.3;
 }
+
+.error{
+    height: 210px;
+    line-height: 210px;
+    text-align: center;
+}
