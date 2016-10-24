@@ -137,7 +137,7 @@
 
   DLsite = {
     parser: function(dom, popup, rj){
-      var work_name, table_outline, row, row_text, data, spec_list,
+      var work_name, table_outline, row, row_text, data, spec_list, work_date_ana,
           work_info = {};
       work_info.rj = rj;
       work_info.img = dom.querySelector("div#work_visual").style["background-image"].slice(7, -2);
@@ -169,11 +169,13 @@
         work_info.filesize = spec_list.replace("総計", "").trim();
       else
         work_info.filesize = spec_list.substring(spec_list.lastIndexOf("/")+1, spec_list.lastIndexOf("(")).trim();
+      work_date_ana = dom.querySelector("p#work_date_ana");
+      if(work_date_ana)
+        work_info.date_announce = work_date_ana.childNodes[2].innerText;
       Popup.filldiv(popup, work_info);
     },
     request: function(popup, rj){
-      var url, parser, work_info = {};
-      url = "http://www.dlsite.com/maniax/work/=/product_id/"+rj+".html";
+      var url = "http://www.dlsite.com/maniax/work/=/product_id/"+rj+".html";
       GM_xmlhttpRequest({
         method: "GET",
         url: url,
@@ -186,9 +188,30 @@
             var dom = new DOMParser().parseFromString(resp.responseText, "text/html");
             DLsite.parser(dom, popup, rj);
           }
+          else if(resp.readyState === 4 && resp.status === 404)
+            DLsite.request_announce(popup, rj);
         }
       });
     },
+    request_announce: function(popup, rj){
+      var url = "http://www.dlsite.com/maniax/announce/=/product_id/"+rj+".html";
+      GM_xmlhttpRequest({
+        method: "GET",
+        url: url,
+        headers: {
+        "User-Agent": "Mozilla/49.0.1",
+        "Accept": "text/xml"
+        },
+        onload: function(resp){
+          if(resp.readyState === 4 && resp.status === 200){
+            var dom = new DOMParser().parseFromString(resp.responseText, "text/html");
+            DLsite.parser(dom, popup, rj);
+          }
+          else if(resp.readyState === 4 && resp.status === 404)
+            Popup.filldiv(popup, {error: 404});
+        }
+      });
+    }
   };
 
   Popup = {
@@ -202,20 +225,32 @@
       DLsite.request(div, rj);
     },
     filldiv: function(div, work_info){
-      div.innerHTML = [
-      "<img src = 'http://"+work_info.img+"'></img>",
-      "<div class = 'voice-title'>"+work_info.title+"</div>",
-      "<div class = 'rjcode'>["+work_info.rj+"]</div>",
-      "<br>",
-      "Circle: <a>"+work_info.circle+"</a>",
-      "<br>",
-      "Release: <a>"+work_info.date+"</a>",
-      "<br>",
-      "Age Rating: <a>"+work_info.rating+"</a>",
-      "<br>",
-      "Tags: "+work_info.tags,
-      "<br>",
-      "File Size: "+work_info.filesize].join("");
+      var html;
+      if(work_info.error)
+        div.innerHTML = "<div class='error'>Work not found.</span>";
+      else
+      {
+        html = [
+        "<img src = 'http://"+work_info.img+"'></img>",
+        "<div class = 'voice-title'>"+work_info.title+"</div>",
+        "<div class = 'rjcode'>["+work_info.rj+"]</div>",
+        "<br>",
+        "Circle: <a>"+work_info.circle+"</a>",
+        "<br>"]
+        if(work_info.date)
+          html = html.concat(["Release: <a>"+work_info.date+"</a>",
+                              "<br>"]);
+        else if(work_info.date_announce)
+          html = html.concat(["Scheduled Release: <a>"+work_info.date_announce+"</a>",
+                              "<br>"]);
+        html = html.concat(["Age Rating: <a>"+work_info.rating+"</a>",
+                            "<br>",
+                            "Tags: "+work_info.tags]);
+        if(work_info.filesize)
+          html = html.concat(["<br>",
+                              "File Size: "+work_info.filesize]); 
+        div.innerHTML = html.join("");
+      }
       if(div.className.includes("init")){
         var style;
         div.className = div.className.replace("init", "");
