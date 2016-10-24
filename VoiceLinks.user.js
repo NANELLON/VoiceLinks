@@ -124,13 +124,20 @@
     },
     rebindevent: function(elem){
       var voicelinks, voicelink;
-      voicelinks = elem.querySelectorAll(".voicelinked");
-      for(var i = 0, ii = voicelinks.length; i<ii; i++)
-      {
-        voicelink = voicelinks[i];
-        voicelink.addEventListener("mouseover", Popup.over);
-        voicelink.addEventListener("mouseout", Popup.out);
-        voicelink.addEventListener("mousemove", Popup.move);
+      if(elem.nodeName === "A"){
+        elem.addEventListener("mouseover", Popup.over);
+        elem.addEventListener("mouseout", Popup.out);
+        elem.addEventListener("mousemove", Popup.move);
+      }
+      else{
+        voicelinks = elem.querySelectorAll(".voicelinked");
+        for(var i = 0, ii = voicelinks.length; i<ii; i++)
+        {
+          voicelink = voicelinks[i];
+          voicelink.addEventListener("mouseover", Popup.over);
+          voicelink.addEventListener("mouseout", Popup.out);
+          voicelink.addEventListener("mousemove", Popup.move);
+        }
       }
     }
   };
@@ -316,9 +323,11 @@
           if(node.nodeName === "DIV"){
             if(node.classList.contains("postContainer"))
               Parser.linkify(node);
-            if(node.classList.contains("inline"))
+            if(node.classList.contains("inline") || node.classList.contains("inlined"))
               Parser.rebindevent(node);
           }
+          else if(node.nodeName === "A" && node.classList.contains("voicelinked"))
+            Parser.rebindevent(node);
         }
       }
     },
