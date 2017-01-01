@@ -185,9 +185,9 @@
         work_info.filesize = spec_list.replace("総計", "").trim();
       else
         work_info.filesize = spec_list.substring(spec_list.lastIndexOf("/")+1, spec_list.lastIndexOf("(")).trim();
-      work_date_ana = dom.querySelector("p#work_date_ana");
+      work_date_ana = dom.querySelector("strong.work_date_ana");
       if(work_date_ana)
-        work_info.date_announce = work_date_ana.childNodes[2].innerText;
+        work_info.date_announce = work_date_ana.innerText;
       Popup.filldiv(popup, work_info);
     },
     request: function(popup, rj){
