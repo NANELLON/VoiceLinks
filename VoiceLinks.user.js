@@ -139,6 +139,15 @@
           voicelink.addEventListener("mousemove", Popup.move);
         }
       }
+    },
+    replace_announce: function(rj){
+      var voicelinks, voicelink;
+      voicelinks = document.querySelectorAll("#"+rj);
+      for(var i = 0 , ii = voicelinks.length; i<ii; i++)
+      {
+        voicelink = voicelinks[i];
+        voicelink.href = "http://www.dlsite.com/maniax/announce/=/product_id/"+rj+".html";
+      }
     }
   };
 
@@ -212,6 +221,7 @@
         onload: function(resp){
           if(resp.readyState === 4 && resp.status === 200){
             var dom = new DOMParser().parseFromString(resp.responseText, "text/html");
+            Parser.replace_announce(rj);
             DLsite.parser(dom, popup, rj);
           }
           else if(resp.readyState === 4 && resp.status === 404)
