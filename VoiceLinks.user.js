@@ -154,9 +154,15 @@
   DLsite = {
     parser: function(dom, popup, rj){
       var work_name, table_outline, row, row_text, data, spec_list, work_date_ana,
-          work_info = {};
+          work_info = {}, rj_group;
       work_info.rj = rj;
-      work_info.img = dom.querySelector("div#work_visual").style["background-image"].slice(7, -2);
+      if(rj.slice(5) == "000")
+        rj_group = rj;
+      else{
+        rj_group = (parseInt(rj.slice(2,5))+1).toString()  + "000";
+        rj_group = "RJ" + ("000000"+rj_group).substring(rj_group.length);
+      }
+      work_info.img = "img.dlsite.jp/modpub/images2/work/doujin/"+rj_group+"/"+rj+"_img_main.jpg";
       work_name = dom.querySelector("h1#work_name").childNodes[1];
       work_info.title = work_name.childNodes[work_name.childNodes.length - 1].nodeValue;
       work_info.circle = dom.querySelector("span.maker_name").innerText;
