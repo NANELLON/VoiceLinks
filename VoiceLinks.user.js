@@ -4,7 +4,7 @@
 // @description Makes RJ codes more useful.
 // @include     https://boards.4chan.org/*
 // @include     http://boards.4chan.org/*
-// @version     1.2.2
+// @version     1.2.3
 // @grant       GM_xmlhttpRequest
 // @updateURL   https://github.com/Sanyarin/VoiceLinks/raw/master/VoiceLinks.user.js
 // @downloadURL https://github.com/Sanyarin/VoiceLinks/raw/master/VoiceLinks.user.js
