@@ -192,8 +192,10 @@
       else
         work_info.filesize = spec_list.substring(spec_list.lastIndexOf("/")+1, spec_list.lastIndexOf("(")).trim();
       work_date_ana = dom.querySelector("strong.work_date_ana");
-      if(work_date_ana)
+      if(work_date_ana){
         work_info.date_announce = work_date_ana.innerText;
+        work_info.img = "img.dlsite.jp/modpub/images2/ana/doujin/"+rj_group+"/"+rj+"_ana_img_main.jpg"
+      }
       Popup.filldiv(popup, work_info);
     },
     request: function(popup, rj){
