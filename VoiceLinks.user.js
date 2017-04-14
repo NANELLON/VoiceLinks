@@ -116,7 +116,7 @@
         rj = voicelink.innerText.toUpperCase();
         voicelink.href = "http://www.dlsite.com/maniax/work/=/product_id/"+rj+".html";
         voicelink.className = "voicelinked";
-        voicelink.id = rj;
+        voicelink.setAttribute("rjcode", rj.toUpperCase());
         voicelink.addEventListener("mouseover", Popup.over);
         voicelink.addEventListener("mouseout", Popup.out);
         voicelink.addEventListener("mousemove", Popup.move);
@@ -286,7 +286,7 @@
     },
     over: function(ev){
       var rj, popup, style;
-      rj = ev.target.innerText.toUpperCase();
+      rj = ev.target.getAttribute("rjcode");
       popup = document.querySelector("div#voice-"+rj);
       if(popup){
         style = popup.getAttribute("style");
@@ -298,7 +298,7 @@
     },
     out: function(ev){
       var rj, popup, style;
-      rj = ev.target.innerText.toUpperCase();
+      rj = ev.target.getAttribute("rjcode");
       popup = document.querySelector("div#voice-"+rj);
       if(popup){
         if(popup.className.includes("init"))
@@ -310,7 +310,7 @@
     },
     move: function(ev){
       var rj, popup, style;
-      rj = ev.target.innerText.toUpperCase();
+      rj = ev.target.getAttribute("rjcode");
       popup = document.querySelector("div#voice-"+rj);
       if(popup){
         if(popup.offsetWidth + ev.clientX + 10 < window.innerWidth - 10)
