@@ -142,7 +142,7 @@
     },
     replace_announce: function(rj){
       var voicelinks, voicelink;
-      voicelinks = document.querySelectorAll("#"+rj);
+      voicelinks = document.querySelectorAll("[rjcode="+rj+"]");
       for(var i = 0 , ii = voicelinks.length; i<ii; i++)
       {
         voicelink = voicelinks[i];
