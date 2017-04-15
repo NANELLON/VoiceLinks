@@ -152,7 +152,7 @@
   };
 
   DLsite = {
-    parser: function(dom, popup, rj){
+    parser: function(dom, rj){
       var work_name, table_outline, row, row_text, data, spec_list, work_date_ana,
           work_info = {}, rj_group;
       work_info.rj = rj;
@@ -196,9 +196,9 @@
         work_info.date_announce = work_date_ana.innerText;
         work_info.img = "img.dlsite.jp/modpub/images2/ana/doujin/"+rj_group+"/"+rj+"_ana_img_main.jpg"
       }
-      Popup.filldiv(popup, work_info);
+      Popup.filldiv(work_info);
     },
-    request: function(popup, rj){
+    request: function(rj){
       var url = "http://www.dlsite.com/maniax/work/=/product_id/"+rj+".html";
       GM_xmlhttpRequest({
         method: "GET",
@@ -210,14 +210,14 @@
         onload: function(resp){
           if(resp.readyState === 4 && resp.status === 200){
             var dom = new DOMParser().parseFromString(resp.responseText, "text/html");
-            DLsite.parser(dom, popup, rj);
+            DLsite.parser(dom, rj);
           }
           else if(resp.readyState === 4 && resp.status === 404)
-            DLsite.request_announce(popup, rj);
+            DLsite.request_announce(rj);
         }
       });
     },
-    request_announce: function(popup, rj){
+    request_announce: function(rj){
       var url = "http://www.dlsite.com/maniax/announce/=/product_id/"+rj+".html";
       GM_xmlhttpRequest({
         method: "GET",
@@ -230,10 +230,10 @@
           if(resp.readyState === 4 && resp.status === 200){
             var dom = new DOMParser().parseFromString(resp.responseText, "text/html");
             Parser.replace_announce(rj);
-            DLsite.parser(dom, popup, rj);
+            DLsite.parser(dom, rj);
           }
           else if(resp.readyState === 4 && resp.status === 404)
-            Popup.filldiv(popup, {error: 404});
+            Popup.filldiv({rj: rj, error: 404});
         }
       });
     }
@@ -247,10 +247,11 @@
       div.id = "voice-" + rj;
       div.setAttribute("style", "display: none !important");
       document.body.appendChild(div);
-      DLsite.request(div, rj);
+      DLsite.request(rj);
     },
-    filldiv: function(div, work_info){
-      var html;
+    filldiv: function(work_info){
+      var html, div;
+      div = document.querySelector("div#voice-"+work_info.rj);
       if(work_info.error)
         div.innerHTML = "<div class='error'>Work not found.</span>";
       else
