@@ -5,6 +5,9 @@
     line-height: 1.4em;
     font-size: 1.1em;
     margin-bottom: 10px;
+    box-shadow: 0 0 .125em 0 rgba(0,0,0,.5);
+    border-radius: 0.5em;
+
 }
 
 .voicepopup img{
