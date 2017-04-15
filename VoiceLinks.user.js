@@ -320,7 +320,7 @@
         } else {
           popup.style.left = (window.innerWidth - popup.offsetWidth - 10) + "px";
         }
-        if(popup.offsetHeight + ev.clientY + 20 > window.innerHeight)
+        if(popup.offsetHeight + ev.clientY + 50 > window.innerHeight)
         {
           popup.style.top = (ev.clientY - popup.offsetHeight - 8) +"px";
         } else {
