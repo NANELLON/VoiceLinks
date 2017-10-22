@@ -62,7 +62,7 @@
     },
     linkify: function(elem){
       var posts, post, textnodes, textnode,
-          lnode, newnodes, text, match, idx, val;
+          newnodes, text, match, idx, val;
       posts = elem.querySelectorAll("blockquote");
       for(var i = 0, ii = posts.length; i<ii; i++)
       {
@@ -70,38 +70,40 @@
         textnodes = Parser.textnodes(post);
         for(var j = 0, jj = textnodes.length; j<jj; j++)
         {
-          idx = [];
-          val = [];
+          idx = [];    //store regex match index
+          val = [];    //store regex match value
           newnodes = [];
           textnode = textnodes[j];
           text = textnode.nodeValue;
+
           if(text.match(regex.rj)){
+
             while(match = regex.rj.exec(text))
             {
               idx.push(match.index);
               val.push(match[0]);
             }
-            lnode = Parser.wrap(val[0]);
-            textnode.parentNode.insertBefore(lnode, textnode.nextSibling);
-            if(text.substring(0,idx[0]))
-              textnode.nodeValue = text.substring(0,idx[0]);
-            else
-              textnode.remove();
-            for(var k = 1, kk = idx.length; k<kk; k++)
+
+            textnode.nodeValue = text.substring(0,idx[0]);
+
+            for(var k = 0, kk = idx.length; k<kk; k++) //push nodes to be inserted after textnode
             {
-              if(text.substring(idx[k-1]+8, idx[k]))
-                newnodes.push(Parser.substringnode(text, idx[k-1]+8, idx[k]));
               newnodes.push(Parser.wrap(val[k]));
+              if(text.substring(idx[k]+8, idx[k+1]))
+                newnodes.push(Parser.substringnode(text, idx[k]+8, idx[k+1]));
             }
-            if(text.substring(idx[kk-1]+8)) //checking last bit of textnode text
-              newnodes.push(Parser.substringnode(text, idx[kk-1]+8));
-            if(newnodes.length > 0){
-              lnode.parentNode.insertBefore(newnodes[0], lnode.nextSibling); //inserting first newnode
+
+            if(newnodes.length){
+              textnode.parentNode.insertBefore(newnodes[0], textnode.nextSibling); //inserting first newnode
               for(var l = 1, ll = newnodes.length; l<ll; l++) //inserting the rest
               {
-                lnode.parentNode.insertBefore(newnodes[l], newnodes[l-1].nextSibling);
+                textnode.parentNode.insertBefore(newnodes[l], newnodes[l-1].nextSibling);
               }
             }
+
+            if(!textnode.nodeValue)
+              textnode.remove();
+
           }
         }
       }
