@@ -184,6 +184,9 @@
           case (row_text.includes("ジャンル")):
             work_info.tags = data;
             break;
+          case (row_text.includes("声優")):
+            work_info.cv = data; 
+            break;
           default:
             break;
         }
@@ -265,18 +268,26 @@
         "<br>",
         "Circle: <a>"+work_info.circle+"</a>",
         "<br>"]
+
         if(work_info.date)
           html = html.concat(["Release: <a>"+work_info.date+"</a>",
                               "<br>"]);
         else if(work_info.date_announce)
           html = html.concat(["Scheduled Release: <a>"+work_info.date_announce+"</a>",
                               "<br>"]);
+
         html = html.concat(["Age Rating: <a>"+work_info.rating+"</a>",
-                            "<br>",
-                            "Tags: "+work_info.tags]);
+                            "<br>"]);
+
+        if(work_info.cv)
+          html = html.concat(["CV: <a>"+work_info.cv+"</a>",
+                              "<br>"]);
+
+        html = html.concat(["Tags: "+work_info.tags],
+                            "<br>");
+
         if(work_info.filesize)
-          html = html.concat(["<br>",
-                              "File Size: "+work_info.filesize]); 
+          html = html.concat(["File Size: "+work_info.filesize]); 
         div.innerHTML = html.join("");
       }
       if(div.className.includes("init")){
