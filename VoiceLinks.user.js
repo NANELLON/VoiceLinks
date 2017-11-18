@@ -16,7 +16,7 @@
   var Main, Parser, Popup, DLsite, regex;
   
   regex = {
-    rj: new RegExp("RJ[0-9]{6}", "gi")
+    rj: new RegExp("R[JE][0-9]{6}", "gi")
   };
   
   Parser = {
@@ -115,7 +115,7 @@
       for(var i = 0, ii = voicelinks.length; i<ii; i++)
       {
         voicelink = voicelinks[i];
-        rj = voicelink.innerText.toUpperCase();
+        rj = voicelink.innerText.toUpperCase().replace("E", "J");
         voicelink.href = "http://www.dlsite.com/maniax/work/=/product_id/"+rj+".html";
         voicelink.className = "voicelinked";
         voicelink.setAttribute("rjcode", rj.toUpperCase());
