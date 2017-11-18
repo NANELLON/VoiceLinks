@@ -5,6 +5,7 @@
 // @include     https://boards.4chan.org/*
 // @include     http://boards.4chan.org/*
 // @version     1.2.5
+// @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
 // @updateURL   https://github.com/Sanyarin/VoiceLinks/raw/master/VoiceLinks.user.js
 // @downloadURL https://github.com/Sanyarin/VoiceLinks/raw/master/VoiceLinks.user.js
@@ -205,7 +206,7 @@
     },
     request: function(rj){
       var url = "http://www.dlsite.com/maniax/work/=/product_id/"+rj+".html";
-      GM_xmlhttpRequest({
+      (typeof GM !== "undefined" && GM !== null ? GM.xmlHttpRequest : GM_xmlhttpRequest)({
         method: "GET",
         url: url,
         headers: {
@@ -224,7 +225,7 @@
     },
     request_announce: function(rj){
       var url = "http://www.dlsite.com/maniax/announce/=/product_id/"+rj+".html";
-      GM_xmlhttpRequest({
+      (typeof GM !== "undefined" && GM !== null ? GM.xmlHttpRequest : GM_xmlhttpRequest)({
         method: "GET",
         url: url,
         headers: {
