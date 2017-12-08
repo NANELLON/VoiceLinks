@@ -166,8 +166,7 @@
         rj_group = "RJ" + ("000000"+rj_group).substring(rj_group.length);
       }
       work_info.img = "img.dlsite.jp/modpub/images2/work/doujin/"+rj_group+"/"+rj+"_img_main.jpg";
-      work_name = dom.querySelector("h1#work_name").childNodes[1];
-      work_info.title = work_name.childNodes[work_name.childNodes.length - 1].nodeValue;
+      work_info.title = dom.getElementById("work_name").innerText;
       work_info.circle = dom.querySelector("span.maker_name").innerText;
       table_outline = dom.querySelector("table#work_outline");
       for(var i = 0, ii = table_outline.rows.length; i<ii; i++)
