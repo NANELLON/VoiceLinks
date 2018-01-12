@@ -191,11 +191,8 @@
             break;
         }
       }
-      spec_list = dom.querySelectorAll(".work_spec_list dd")[1].firstChild.nodeValue;
-      if(spec_list.includes("総計"))
-        work_info.filesize = spec_list.replace("総計", "").trim();
-      else
-        work_info.filesize = spec_list.substring(spec_list.lastIndexOf("/")+1, spec_list.lastIndexOf("(")).trim();
+      work_info.filesize = dom.querySelectorAll(".work_spec_list dd")[1].firstChild
+                          .nodeValue.trim().split("\xa0").pop();
       work_date_ana = dom.querySelector("strong.work_date_ana");
       if(work_date_ana){
         work_info.date_announce = work_date_ana.innerText;
