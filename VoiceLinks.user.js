@@ -187,12 +187,13 @@
           case (row_text.includes("声優")):
             work_info.cv = data; 
             break;
+          case (row_text.includes("ファイル容量")):
+            work_info.filesize = data.replace("総計","").trim();
+            break;
           default:
             break;
         }
       }
-      work_info.filesize = dom.querySelectorAll(".work_spec_list dd")[1].firstChild
-                          .nodeValue.trim().split("\xa0").pop();
       work_date_ana = dom.querySelector("strong.work_date_ana");
       if(work_date_ana){
         work_info.date_announce = work_date_ana.innerText;
