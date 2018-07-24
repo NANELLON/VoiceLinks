@@ -156,7 +156,7 @@
 
   DLsite = {
     parser: function(dom, rj){
-      var work_name, table_outline, row, row_text, data, spec_list, work_date_ana,
+      var work_name, table_outline, row, row_header, row_data, spec_list, work_date_ana,
           work_info = {}, rj_group;
       work_info.rj = rj;
       if(rj.slice(5) == "000")
@@ -172,23 +172,23 @@
       for(var i = 0, ii = table_outline.rows.length; i<ii; i++)
       {
         row = table_outline.rows[i];
-        row_text = row.innerText;
-        data = row.cells[1].innerText;
+        row_header = row.cells[0].innerText;
+        row_data = row.cells[1];
         switch(true){
-          case (row_text.includes("販売日")):
-            work_info.date = data;
+          case (row_header.includes("販売日")):
+            work_info.date = row_data.innerText;
             break;
-          case (row_text.includes("年齢指定")):
-            work_info.rating = data;
+          case (row_header.includes("年齢指定")):
+            work_info.rating = row_data.innerText;
             break;
-          case (row_text.includes("ジャンル")):
-            work_info.tags = data;
+          case (row_header.includes("ジャンル")):
+            work_info.tags = row_data.innerText;
             break;
-          case (row_text.includes("声優")):
-            work_info.cv = data; 
+          case (row_header.includes("声優")):
+            work_info.cv = row_data.innerText; 
             break;
-          case (row_text.includes("ファイル容量")):
-            work_info.filesize = data.replace("総計","").trim();
+          case (row_header.includes("ファイル容量")):
+            work_info.filesize = row_data.innerText.replace("総計","").trim();
             break;
           default:
             break;
