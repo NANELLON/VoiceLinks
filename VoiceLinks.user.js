@@ -182,7 +182,8 @@
             work_info.rating = row_data.innerText;
             break;
           case (row_header.includes("ジャンル")):
-            work_info.tags = row_data.innerText;
+            var tag_nodes = row_data.querySelectorAll("a");
+            work_info.tags = [...tag_nodes].map(a => {return a.innerText});
             break;
           case (row_header.includes("声優")):
             work_info.cv = row_data.innerText; 
@@ -281,8 +282,11 @@
           html = html.concat(["CV: <a>"+work_info.cv+"</a>",
                               "<br>"]);
 
-        html = html.concat(["Tags: "+work_info.tags],
-                            "<br>");
+        html = html.concat("Tags: <a>");
+        work_info.tags.forEach((tag) => {
+          html = html.concat(tag + "\u3000");
+        });
+        html = html.concat("</a><br>");
 
         if(work_info.filesize)
           html = html.concat(["File Size: "+work_info.filesize]); 
