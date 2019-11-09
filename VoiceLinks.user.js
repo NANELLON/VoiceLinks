@@ -2,386 +2,415 @@
 // @name        VoiceLinks
 // @namespace   Sanya
 // @description Makes RJ codes more useful.
-// @include     https://boards.4chan.org/*
-// @include     http://boards.4chan.org/*
-// @version     1.2.10
+// @include     *://*/*
+// @version     2.0.0
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
 // @updateURL   https://github.com/Sanyarin/VoiceLinks/raw/master/VoiceLinks.user.js
 // @downloadURL https://github.com/Sanyarin/VoiceLinks/raw/master/VoiceLinks.user.js
 // @run-at      document-start
 // ==/UserScript==
+ 
+(function () {
+  'use strict';
+  const RJ_REGEX = new RegExp("R[JE][0-9]{6}", "gi");
+  const VOICELINK_CLASS = 'voicelink';
+  const RJCODE_ATTRIBUTE = 'rjcode';
+  const css = `
+      .voicepopup {
+          min-width: 600px !important;
+          z-index: 50000 !important;
+          max-width: 80% !important;
+          position: fixed !important;
+          line-height: 1.4em;
+          font-size: 1.1em;
+          margin-bottom: 10px;
+          box-shadow: 0 0 .125em 0 rgba(0,0,0,.5);
+          border-radius: 0.5em;
+          background-color: inherit;
+          padding: 10px;
+      }
 
-(function(){
-  "use strict";
-  var Main, Parser, Popup, DLsite, regex;
-  
-  regex = {
-    rj: new RegExp("R[JE][0-9]{6}", "gi")
-  };
-  
-  Parser = {
-    textnodes: function(elem){ //copied from ExLinks
-      var tn = [], ws = /^\s*$/, getTextNodes;
-      getTextNodes = function(node) {
-        var cn;
-        for ( var i = 0, ii = node.childNodes.length; i < ii; i++ )
-        {
-         cn = node.childNodes[i];
-          if(cn.nodeType === 3)
-          {
-            if(!ws.test(cn.nodeValue))
-            {
-              tn.push(cn);
-            }
-          } else
-          if(cn.nodeType === 1)
-          {
-            if(cn.tagName === 'SPAN' || cn.tagName === 'P' || cn.tagName === 'S')
-            {
-              getTextNodes(cn);
-            }
-          }
-        }
-      };
-      getTextNodes(elem);
-      return tn;
-    },
-    substringnode: function(text, a, b){
-      var e;
-      e = document.createTextNode(text.substring(a, b));
-      return e;
-    },
-    wrap: function(rj){
-      var e;
-      e = document.createElement("a");
-      e.classList = "voicelinkunprocessed";
-      e.innerHTML = rj;
-      e.target = "_blank";
-      e.rel = "noreferrer";
-      return e;
-    },
-    linkify: function(elem){
-      var posts, post, textnodes, textnode,
-          newnodes, text, match, idx, val;
-      posts = elem.querySelectorAll("blockquote");
-      for(var i = 0, ii = posts.length; i<ii; i++)
-      {
-        post = posts[i];
-        textnodes = Parser.textnodes(post);
-        for(var j = 0, jj = textnodes.length; j<jj; j++)
-        {
-          idx = [];    //store regex match index
-          val = [];    //store regex match value
-          newnodes = [];
-          textnode = textnodes[j];
-          text = textnode.nodeValue;
+      .voicepopup img {
+          width: 270px;
+          height: auto;
+          margin: 3px 15px 3px 3px;
+      }
 
-          if(text.match(regex.rj)){
+      .voice-title {
+          font-size: 1.4em;
+          font-weight: bold;
+          text-align: center;
+          margin: 5px 10px 0 0;
+          display: block;
+      }
 
-            while(match = regex.rj.exec(text))
-            {
-              idx.push(match.index);
-              val.push(match[0]);
-            }
+      .rjcode {
+          text-align: center;
+          font-size: 1.2em;
+          font-style: italic;
+          opacity: 0.3;
+      }
 
-            textnode.nodeValue = text.substring(0,idx[0]);
+      .error {
+          height: 210px;
+          line-height: 210px;
+          text-align: center;
+      }
 
-            for(var k = 0, kk = idx.length; k<kk; k++) //push nodes to be inserted after textnode
-            {
-              newnodes.push(Parser.wrap(val[k]));
-              if(text.substring(idx[k]+8, idx[k+1]))
-                newnodes.push(Parser.substringnode(text, idx[k]+8, idx[k+1]));
-            }
+      .discord-dark {
+          background-color: #36393f;
+          color: #dcddde;
+          font-size: 0.9375rem;
+      }
+  `
 
-            if(newnodes.length){
-              textnode.parentNode.insertBefore(newnodes[0], textnode.nextSibling); //inserting first newnode
-              for(var l = 1, ll = newnodes.length; l<ll; l++) //inserting the rest
+  function getAdditionalPopupClasses() {
+      const hostname = document.location.hostname;
+      switch (hostname) {
+          case "boards.4chan.org": return "post reply";
+          case "discordapp.com": return "discord-dark";
+          default: return null;
+      }
+  }
+
+  function getXmlHttpRequest() {
+      return (typeof GM !== "undefined" && GM !== null ? GM.xmlHttpRequest : GM_xmlhttpRequest);
+  }
+
+  const Parser = {
+      walkNodes: function (elem) {
+          const rjNodeTreeWalker = document.createTreeWalker(
+              elem,
+              NodeFilter.SHOW_TEXT,
               {
-                textnode.parentNode.insertBefore(newnodes[l], newnodes[l-1].nextSibling);
+                  acceptNode: function (node) {
+                      if (node.parentElement.classList.contains(VOICELINK_CLASS))
+                          return NodeFilter.FILTER_ACCEPT;
+                      if (node.nodeValue.match(RJ_REGEX))
+                          return NodeFilter.FILTER_ACCEPT;
+                  }
+              },
+              false,
+          );
+          while (rjNodeTreeWalker.nextNode()) {
+              const node = rjNodeTreeWalker.currentNode;
+              if (node.parentElement.classList.contains(VOICELINK_CLASS))
+                  Parser.rebindEvents(node.parentElement);
+              else
+                  Parser.linkify(node);
+          }
+      },
+
+      wrapRJCode: function (rjCode) {
+          var e;
+          e = document.createElement("a");
+          e.classList = VOICELINK_CLASS;
+          e.href = `https://www.dlsite.com/maniax/work/=/product_id/${rjCode}.html`
+          e.innerHTML = rjCode;
+          e.target = "_blank";
+          e.rel = "noreferrer";
+          e.setAttribute(RJCODE_ATTRIBUTE, rjCode.toUpperCase());
+          e.addEventListener("mouseover", Popup.over);
+          e.addEventListener("mouseout", Popup.out);
+          e.addEventListener("mousemove", Popup.move);
+          return e;
+      },
+
+      linkify: function (textNode) {
+          const nodeOriginalText = textNode.nodeValue;
+          const matches = [];
+
+          let match;
+          while (match = RJ_REGEX.exec(nodeOriginalText)) {
+              matches.push({
+                  index: match.index,
+                  value: match[0],
+              });
+          }
+
+          // Keep text in text node until first RJ code
+          textNode.nodeValue = nodeOriginalText.substring(0, matches[0].index);
+
+          // Insert rest of text while linkifying RJ codes
+          let prevNode = null;
+          for (let i = 0; i < matches.length; ++i) {
+              // Insert linkified RJ code
+              const rjLinkNode = Parser.wrapRJCode(matches[i].value);
+              textNode.parentNode.insertBefore(
+                  rjLinkNode,
+                  prevNode ? prevNode.nextSibling : textNode.nextSibling,
+              );
+
+              // Insert text after if there is any
+              let upper;
+              if (i === matches.length - 1)
+                  upper = undefined;
+              else
+                  upper = matches[i + 1].index;
+              let substring;
+              if (substring = nodeOriginalText.substring(matches[i].index + 8, upper)) {
+                  const subtextNode = document.createTextNode(substring);
+                  textNode.parentNode.insertBefore(
+                      subtextNode,
+                      rjLinkNode.nextElementSibling,
+                  );
+                  prevNode = subtextNode;
               }
-            }
-
-            if(!textnode.nodeValue)
-              textnode.remove();
-
+              else {
+                  prevNode = rjLinkNode;
+              }
           }
-        }
-      }
-      Parser.process(elem);
-    },
-    process: function(elem){
-      var voicelinks, voicelink, rj;
-      voicelinks = elem.querySelectorAll(".voicelinkunprocessed");
-      for(var i = 0, ii = voicelinks.length; i<ii; i++)
-      {
-        voicelink = voicelinks[i];
-        rj = voicelink.innerText.toUpperCase().replace("E", "J");
-        voicelink.href = "http://www.dlsite.com/maniax/work/=/product_id/"+rj+".html";
-        voicelink.className = "voicelinked";
-        voicelink.setAttribute("rjcode", rj.toUpperCase());
-        voicelink.addEventListener("mouseover", Popup.over);
-        voicelink.addEventListener("mouseout", Popup.out);
-        voicelink.addEventListener("mousemove", Popup.move);
-      }
-    },
-    rebindevent: function(elem){
-      var voicelinks, voicelink;
-      if(elem.nodeName === "A"){
-        elem.addEventListener("mouseover", Popup.over);
-        elem.addEventListener("mouseout", Popup.out);
-        elem.addEventListener("mousemove", Popup.move);
-      }
-      else{
-        voicelinks = elem.querySelectorAll(".voicelinked");
-        for(var i = 0, ii = voicelinks.length; i<ii; i++)
-        {
-          voicelink = voicelinks[i];
-          voicelink.addEventListener("mouseover", Popup.over);
-          voicelink.addEventListener("mouseout", Popup.out);
-          voicelink.addEventListener("mousemove", Popup.move);
-        }
-      }
-    },
-    replace_announce: function(rj){
-      var voicelinks, voicelink;
-      voicelinks = document.querySelectorAll("[rjcode="+rj+"]");
-      for(var i = 0 , ii = voicelinks.length; i<ii; i++)
-      {
-        voicelink = voicelinks[i];
-        voicelink.href = "http://www.dlsite.com/maniax/announce/=/product_id/"+rj+".html";
-      }
-    }
-  };
+      },
 
-  DLsite = {
-    parser: function(dom, rj){
-      var work_name, table_outline, row, row_header, row_data, spec_list, work_date_ana,
-          work_info = {}, rj_group;
-      work_info.rj = rj;
-      if(rj.slice(5) == "000")
-        rj_group = rj;
-      else{
-        rj_group = (parseInt(rj.slice(2,5))+1).toString()  + "000";
-        rj_group = "RJ" + ("000000"+rj_group).substring(rj_group.length);
-      }
-      work_info.img = "img.dlsite.jp/modpub/images2/work/doujin/"+rj_group+"/"+rj+"_img_main.jpg";
-      work_info.title = dom.getElementById("work_name").innerText;
-      work_info.circle = dom.querySelector("span.maker_name").innerText;
-      table_outline = dom.querySelector("table#work_outline");
-      for(var i = 0, ii = table_outline.rows.length; i<ii; i++)
-      {
-        row = table_outline.rows[i];
-        row_header = row.cells[0].innerText;
-        row_data = row.cells[1];
-        switch(true){
-          case (row_header.includes("販売日")):
-            work_info.date = row_data.innerText;
-            break;
-          case (row_header.includes("年齢指定")):
-            work_info.rating = row_data.innerText;
-            break;
-          case (row_header.includes("ジャンル")):
-            var tag_nodes = row_data.querySelectorAll("a");
-            work_info.tags = [...tag_nodes].map(a => {return a.innerText});
-            break;
-          case (row_header.includes("声優")):
-            work_info.cv = row_data.innerText; 
-            break;
-          case (row_header.includes("ファイル容量")):
-            work_info.filesize = row_data.innerText.replace("総計","").trim();
-            break;
-          default:
-            break;
-        }
-      }
-      work_date_ana = dom.querySelector("strong.work_date_ana");
-      if(work_date_ana){
-        work_info.date_announce = work_date_ana.innerText;
-        work_info.img = "img.dlsite.jp/modpub/images2/ana/doujin/"+rj_group+"/"+rj+"_ana_img_main.jpg"
-      }
-      Popup.filldiv(work_info);
-    },
-    request: function(rj){
-      var url = "http://www.dlsite.com/maniax/work/=/product_id/"+rj+".html";
-      (typeof GM !== "undefined" && GM !== null ? GM.xmlHttpRequest : GM_xmlhttpRequest)({
-        method: "GET",
-        url: url,
-        headers: {
-        "User-Agent": "Mozilla/49.0.1",
-        "Accept": "text/xml"
-        },
-        onload: function(resp){
-          if(resp.readyState === 4 && resp.status === 200){
-            var dom = new DOMParser().parseFromString(resp.responseText, "text/html");
-            DLsite.parser(dom, rj);
+      rebindEvents: function (elem) {
+          if (elem.nodeName === "A") {
+              elem.addEventListener("mouseover", Popup.over);
+              elem.addEventListener("mouseout", Popup.out);
+              elem.addEventListener("mousemove", Popup.move);
           }
-          else if(resp.readyState === 4 && resp.status === 404)
-            DLsite.request_announce(rj);
-        }
-      });
-    },
-    request_announce: function(rj){
-      var url = "http://www.dlsite.com/maniax/announce/=/product_id/"+rj+".html";
-      (typeof GM !== "undefined" && GM !== null ? GM.xmlHttpRequest : GM_xmlhttpRequest)({
-        method: "GET",
-        url: url,
-        headers: {
-        "User-Agent": "Mozilla/49.0.1",
-        "Accept": "text/xml"
-        },
-        onload: function(resp){
-          if(resp.readyState === 4 && resp.status === 200){
-            var dom = new DOMParser().parseFromString(resp.responseText, "text/html");
-            Parser.replace_announce(rj);
-            DLsite.parser(dom, rj);
+          else {
+              const voicelinks = elem.querySelectorAll("." + VOICELINK_CLASS);
+              for (var i = 0, ii = voicelinks.length; i < ii; i++) {
+                  const voicelink = voicelinks[i];
+                  voicelink.addEventListener("mouseover", Popup.over);
+                  voicelink.addEventListener("mouseout", Popup.out);
+                  voicelink.addEventListener("mousemove", Popup.move);
+              }
           }
-          else if(resp.readyState === 4 && resp.status === 404)
-            Popup.filldiv({rj: rj, error: 404});
-        }
-      });
-    }
-  };
+      },
 
-  Popup = {
-    makediv : function(rj){
-      var div;
-      div = document.createElement("div");
-      div.className = "voicepopup post reply init";
-      div.id = "voice-" + rj;
-      div.setAttribute("style", "display: none !important");
-      document.body.appendChild(div);
-      DLsite.request(rj);
-    },
-    filldiv: function(work_info){
-      var html, div;
-      div = document.querySelector("div#voice-"+work_info.rj);
-      if(work_info.error)
-        div.innerHTML = "<div class='error'>Work not found.</span>";
-      else
-      {
-        html = [
-        "<img src = 'http://"+work_info.img+"'></img>",
-        "<div class = 'voice-title'>"+work_info.title+"</div>",
-        "<div class = 'rjcode'>["+work_info.rj+"]</div>",
-        "<br>",
-        "Circle: <a>"+work_info.circle+"</a>",
-        "<br>"]
+  }
 
-        if(work_info.date)
-          html = html.concat(["Release: <a>"+work_info.date+"</a>",
-                              "<br>"]);
-        else if(work_info.date_announce)
-          html = html.concat(["Scheduled Release: <a>"+work_info.date_announce+"</a>",
-                              "<br>"]);
+  const Popup = {
+      makePopup: function (e, rjCode) {
+          const popup = document.createElement("div");
+          popup.className = "voicepopup " + (getAdditionalPopupClasses() || '');
+          popup.id = "voice-" + rjCode;
+          popup.style = "display: flex";
+          document.body.appendChild(popup);
+          DLsite.request(rjCode, function (workInfo) {
+              if (workInfo === null)
+                  popup.innerHTML = "<div class='error'>Work not found.</span>";
+              else {
+                  const imgContainer = document.createElement("div")
+                  const img = document.createElement("img");
+                  img.src = workInfo.img;
+                  imgContainer.appendChild(img);
 
-        html = html.concat(["Age Rating: <a>"+work_info.rating+"</a>",
-                            "<br>"]);
+                  let html = `
+                      <div>
+                          <div class='voice-title'>${workInfo.title}</div>
+                          <div class='rjcode'>[${workInfo.rj}]</div>
+                          <br />
+                          Circle: <a>${workInfo.circle}</a>
+                          <br />
+                  `;
+                  if (workInfo.date)
+                      html += `Release: <a>${workInfo.date}</a> <br />`;
+                  else if (workInfo.dateAnnounce)
+                      html += `Scheduled Release: <a>${workInfo.dateAnnounce}</a> <br />`;
 
-        if(work_info.cv)
-          html = html.concat(["CV: <a>"+work_info.cv+"</a>",
-                              "<br>"]);
+                  html += `Age rating: <a>${workInfo.rating}</a><br />`
 
-        html = html.concat("Tags: <a>");
-        work_info.tags.forEach((tag) => {
-          html = html.concat(tag + "\u3000");
-        });
-        html = html.concat("</a><br>");
+                  if (workInfo.cv)
+                      html += `CV: <a>${workInfo.cv}</a> <br />`;
 
-        if(work_info.filesize)
-          html = html.concat(["File Size: "+work_info.filesize]); 
-        div.innerHTML = html.join("");
-      }
-      if(div.className.includes("init")){
-        var style;
-        div.className = div.className.replace("init", "");
-        style = div.getAttribute("style");
-        style = style.replace("none", "table");
-        div.setAttribute("style", style);
-      }
-    },
-    over: function(ev){
-      var rj, popup, style;
-      rj = ev.target.getAttribute("rjcode");
-      popup = document.querySelector("div#voice-"+rj);
-      if(popup){
-        style = popup.getAttribute("style");
-        style = style.replace("none", "table");
-        popup.setAttribute("style", style);
-      } else {
-        Popup.makediv(rj);
-      }
-    },
-    out: function(ev){
-      var rj, popup, style;
-      rj = ev.target.getAttribute("rjcode");
-      popup = document.querySelector("div#voice-"+rj);
-      if(popup){
-        if(popup.className.includes("init"))
-          popup.className = popup.className.replace("init", "");
-        style = popup.getAttribute("style");
-        style = style.replace("table", "none");
-        popup.setAttribute("style", style);
-      }
-    },
-    move: function(ev){
-      var rj, popup, style;
-      rj = ev.target.getAttribute("rjcode");
-      popup = document.querySelector("div#voice-"+rj);
-      if(popup){
-        if(popup.offsetWidth + ev.clientX + 10 < window.innerWidth - 10)
-        {
-          popup.style.left = (ev.clientX + 10) + "px";
-        } else {
-          popup.style.left = (window.innerWidth - popup.offsetWidth - 10) + "px";
-        }
-        if(popup.offsetHeight + ev.clientY + 50 > window.innerHeight)
-        {
-          popup.style.top = (ev.clientY - popup.offsetHeight - 8) +"px";
-        } else {
-          popup.style.top = (ev.clientY + 20) + "px";
-        }
-      }
-    }
-  };
+                  html += `Tags: <a>`
+                  workInfo.tags.forEach(tag => {
+                      html += tag + "\u3000";
+                  });
+                  html += "</a><br />";
 
-  Main = {
-    observer: function(m){
-      var nodes, node, post;
-      for(var i = 0, ii = m.length; i<ii; i++)
-      {
-        nodes = m[i].addedNodes;
-        for(var j = 0, jj = nodes.length; j<jj; j++)
-        {
-          node = nodes[j];
-          if(node.nodeName === "DIV"){
-            if(node.classList.contains("postContainer"))
-              Parser.linkify(node);
-            if(node.classList.contains("inline") || node.classList.contains("inlined"))
-              Parser.rebindevent(node);
+                  if (workInfo.filesize)
+                      html += `File size: ${workInfo.filesize}<br />`;
+
+                  html += "</div>"
+                  popup.innerHTML = html;
+
+                  popup.insertBefore(imgContainer, popup.childNodes[0]);
+              }
+
+              Popup.move(e);
+          });
+      },
+
+      over: function (e) {
+          const rjCode = e.target.getAttribute(RJCODE_ATTRIBUTE);
+          const popup = document.querySelector("div#voice-" + rjCode);
+          if (popup) {
+              const style = popup.getAttribute("style").replace("none", "flex");
+              popup.setAttribute("style", style);
           }
-          else if(node.nodeName === "A" && node.classList.contains("voicelinked"))
-            Parser.rebindevent(node);
-        }
-      }
-    },
-    ready: function(){
-      var css, style, observer;
-      css = "data:text/css;base64,LnZvaWNlcG9wdXB7DQogICAgbWluLXdpZHRoOiA3MCUgIWltcG9ydGFudDsNCiAgICBtYXgtd2lkdGg6IDgwJSAhaW1wb3J0YW50Ow0KICAgIHBvc2l0aW9uOiBmaXhlZCAhaW1wb3J0YW50Ow0KICAgIGxpbmUtaGVpZ2h0OiAxLjRlbTsNCiAgICBmb250LXNpemU6IDEuMWVtOw0KICAgIG1hcmdpbi1ib3R0b206IDEwcHg7DQogICAgYm94LXNoYWRvdzogMCAwIC4xMjVlbSAwIHJnYmEoMCwwLDAsLjUpOw0KICAgIGJvcmRlci1yYWRpdXM6IDAuNWVtOw0KDQp9DQoNCi52b2ljZXBvcHVwIGltZ3sNCiAgICBmbG9hdDogbGVmdDsNCiAgICB3aWR0aDogMjcwcHg7DQogICAgaGVpZ2h0OiBhdXRvOw0KICAgIG1hcmdpbjogM3B4IDE1cHggM3B4IDNweDsNCn0NCg0KLnZvaWNlLXRpdGxlew0KICAgIGZvbnQtc2l6ZTogMS40ZW07DQogICAgZm9udC13ZWlnaHQ6IGJvbGQ7DQogICAgdGV4dC1hbGlnbjogY2VudGVyOw0KICAgIG1hcmdpbjogNXB4IDEwcHggMCAwOw0KICAgIGRpc3BsYXk6IGJsb2NrOw0KfQ0KDQoucmpjb2Rlew0KICAgIHRleHQtYWxpZ246IGNlbnRlcjsNCiAgICBmb250LXNpemU6IDEuMmVtOw0KICAgIGZvbnQtc3R5bGU6IGl0YWxpYzsNCiAgICBvcGFjaXR5OiAwLjM7DQp9DQoNCi5lcnJvcnsNCiAgICBoZWlnaHQ6IDIxMHB4Ow0KICAgIGxpbmUtaGVpZ2h0OiAyMTBweDsNCiAgICB0ZXh0LWFsaWduOiBjZW50ZXI7DQp9DQo=";
-      style = document.createElement("link");
-      style.rel="stylesheet";
-      style.type="text/css";
-      style.href=css;
+          else {
+              Popup.makePopup(e, rjCode);
+          }
+      },
+
+      out: function (e) {
+          const rjCode = e.target.getAttribute("rjcode");
+          const popup = document.querySelector("div#voice-" + rjCode);
+          if (popup) {
+
+              const style = popup.getAttribute("style").replace("flex", "none");;
+              popup.setAttribute("style", style);
+          }
+      },
+
+      move: function (e) {
+          const rjCode = e.target.getAttribute("rjcode");
+          const popup = document.querySelector("div#voice-" + rjCode);
+          if (popup) {
+              if (popup.offsetWidth + e.clientX + 10 < window.innerWidth - 10) {
+                  popup.style.left = (e.clientX + 10) + "px";
+              }
+              else {
+                  popup.style.left = (window.innerWidth - popup.offsetWidth - 10) + "px";
+              }
+
+              if (popup.offsetHeight + e.clientY + 50 > window.innerHeight) {
+                  popup.style.top = (e.clientY - popup.offsetHeight - 8) + "px";
+              }
+              else {
+                  popup.style.top = (e.clientY + 20) + "px";
+              }
+          }
+      },
+  }
+
+  const DLsite = {
+      parseWorkDOM: function (dom, rj) {
+          // workInfo: {
+          //     rj: any;
+          //     img: string;
+          //     title: any;
+          //     circle: any;
+          //     date: any;
+          //     rating: any;
+          //     tags: any[];
+          //     cv: any;
+          //     filesize: any;
+          //     dateAnnounce: any;
+          // }
+          const workInfo = {};
+          workInfo.rj = rj;
+
+          let rj_group;
+          if (rj.slice(5) == "000")
+              rj_group = rj;
+          else {
+              rj_group = (parseInt(rj.slice(2, 5)) + 1).toString() + "000";
+              rj_group = "RJ" + ("000000" + rj_group).substring(rj_group.length);
+          }
+
+          workInfo.img = "https://img.dlsite.jp/modpub/images2/work/doujin/" + rj_group + "/" + rj + "_img_main.jpg";
+          workInfo.title = dom.getElementById("work_name").innerText;
+          workInfo.circle = dom.querySelector("span.maker_name").innerText;
+
+          const table_outline = dom.querySelector("table#work_outline");
+          for (var i = 0, ii = table_outline.rows.length; i < ii; i++) {
+              const row = table_outline.rows[i];
+              const row_header = row.cells[0].innerText;
+              const row_data = row.cells[1];
+              switch (true) {
+                  case (row_header.includes("販売日")):
+                      workInfo.date = row_data.innerText;
+                      break;
+                  case (row_header.includes("年齢指定")):
+                      workInfo.rating = row_data.innerText;
+                      break;
+                  case (row_header.includes("ジャンル")):
+                      const tag_nodes = row_data.querySelectorAll("a");
+                      workInfo.tags = [...tag_nodes].map(a => { return a.innerText });
+                      break;
+                  case (row_header.includes("声優")):
+                      workInfo.cv = row_data.innerText;
+                      break;
+                  case (row_header.includes("ファイル容量")):
+                      workInfo.filesize = row_data.innerText.replace("総計", "").trim();
+                      break;
+                  default:
+                      break;
+              }
+          }
+
+          const work_date_ana = dom.querySelector("strong.work_date_ana");
+          if (work_date_ana) {
+              workInfo.dateAnnounce = work_date_ana.innerText;
+              workInfo.img = "https://img.dlsite.jp/modpub/images2/ana/doujin/" + rj_group + "/" + rj + "_ana_img_main.jpg"
+          }
+
+          return workInfo;
+      },
+
+      request: function (rjCode, callback) {
+          const url = `https://www.dlsite.com/maniax/work/=/product_id/${rjCode}.html`;
+          getXmlHttpRequest()({
+              method: "GET",
+              url,
+              headers: {
+                  "Accept": "text/xml",
+                  "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:67.0)"
+              },
+              onload: function (resp) {
+                  if (resp.readyState === 4 && resp.status === 200) {
+                      const dom = new DOMParser().parseFromString(resp.responseText, "text/html");
+                      const workInfo = DLsite.parseWorkDOM(dom, rjCode);
+                      callback(workInfo);
+                  }
+                  else if (resp.readyState === 4 && resp.status === 404)
+                      DLsite.requestAnnounce(rjCode, callback);
+              },
+          });
+      },
+
+      requestAnnounce: function (rjCode, callback) {
+          const url = `https://www.dlsite.com/maniax/announce/=/product_id/${rjCode}.html`;
+          getXmlHttpRequest()({
+              method: "GET",
+              url,
+              headers: {
+                  "Accept": "text/xml",
+                  "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:67.0)"
+              },
+              onload: function (resp) {
+                  if (resp.readyState === 4 && resp.status === 200) {
+                      const dom = new DOMParser().parseFromString(resp.responseText, "text/html");
+                      const workInfo = DLsite.parseWorkDOM(dom, rjCode);
+                      callback(workInfo);
+                  }
+                  else if (resp.readyState === 4 && resp.status === 404)
+                      callback(null);
+              },
+          });
+      },
+  }
+
+
+  document.addEventListener("DOMContentLoaded", function () {
+      const style = document.createElement("style");
+      style.innerHTML = css;
       document.head.appendChild(style);
-      Parser.linkify(document);
-      document.removeEventListener("DOMContentLoaded", Main.ready);
-      observer = new MutationObserver(Main.observer);
-      observer.observe(document.body, {childList: true, subtree: true});
-    },
-    init: function(){
-      document.addEventListener("DOMContentLoaded", Main.ready);
-    }
-  };
 
-  Main.init();
+      Parser.walkNodes(document.body);
+
+      const observer = new MutationObserver(function (m) {
+          for (let i = 0; i < m.length; ++i) {
+              let addedNodes = m[i].addedNodes;
+
+              for (let j = 0; j < addedNodes.length; ++j) {
+                  Parser.walkNodes(addedNodes[j]);
+              }
+          }
+      });
+
+      document.addEventListener("securitypolicyviolation", function (e) {
+          if (e.blockedURI.includes("img.dlsite.jp")) {
+              const img = document.querySelector(`img[src="${e.blockedURI}"]`);
+              img.remove();
+          }
+      });
+
+      observer.observe(document.body, { childList: true, subtree: true })
+  });
 })();
