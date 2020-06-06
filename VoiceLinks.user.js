@@ -6,11 +6,11 @@
 // @version     2.0.0
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
-// @updateURL   https://github.com/Sanyarin/VoiceLinks/raw/master/VoiceLinks.user.js
-// @downloadURL https://github.com/Sanyarin/VoiceLinks/raw/master/VoiceLinks.user.js
+// @updateURL   https://github.com/NANELLON/VoiceLinks/raw/master/VoiceLinks.user.js
+// @downloadURL https://github.com/NANELLON/VoiceLinks/raw/master/VoiceLinks.user.js
 // @run-at      document-start
 // ==/UserScript==
- 
+
 (function () {
   'use strict';
   const RJ_REGEX = new RegExp("R[JE][0-9]{6}", "gi");
@@ -193,6 +193,16 @@
               if (workInfo === null)
                   popup.innerHTML = "<div class='error'>Work not found.</span>";
               else {
+
+                indexer.request(rjCode, function(status){
+
+                    let primary = status.files[0].alive;
+                    let secondary = status.files[1].alive;
+                    let dlsiteBytes = status.fileSize * 1024 * 1024;
+                    let gotLink = primary || secondary;
+                    let hvdbBytes = primary ? status.files[0].size : secondary ? status.files[1].size : 0;
+                    let warn = primary && (hvdbBytes / dlsiteBytes) < 0.7;
+
                   const imgContainer = document.createElement("div")
                   const img = document.createElement("img");
                   img.src = workInfo.img;
@@ -225,14 +235,22 @@
                   if (workInfo.filesize)
                       html += `File size: ${workInfo.filesize}<br />`;
 
+                  html += `Link state: ${(gotLink ? Popup.humanFileSize(hvdbBytes) : 'missing') + (warn ? '⚠️️' : '')}<br /> `;
+
                   html += "</div>"
                   popup.innerHTML = html;
 
                   popup.insertBefore(imgContainer, popup.childNodes[0]);
+                });
               }
 
               Popup.move(e);
           });
+      },
+      humanFileSize: function (size) {
+        if(!size) return '';
+        var i = Math.floor( Math.log(size) / Math.log(1024) );
+        return ( size / Math.pow(1024, i) ).toFixed(2) * 1 + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
       },
 
       over: function (e) {
@@ -276,6 +294,22 @@
               }
           }
       },
+  }
+
+  const indexer = {
+      request: function (rjCode, callback) {
+        const url = `https://api.xn--4qs.club/work/${rjCode}/status`;
+        getXmlHttpRequest()({
+            method: "GET",
+            url,
+            onload: function (resp) {
+                if (resp.readyState === 4 && resp.status === 200) {
+                    const status = JSON.parse(resp.responseText);
+                    callback(status);
+                }
+            },
+        });
+      }
   }
 
   const DLsite = {
