@@ -3,7 +3,7 @@
 // @namespace   Sanya
 // @description Makes RJ codes more useful.
 // @include     *://*/*
-// @version     2.0.0
+// @version     2.1.0
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
 // @updateURL   https://github.com/NANELLON/VoiceLinks/raw/master/VoiceLinks.user.js
@@ -36,6 +36,30 @@
           height: auto;
           margin: 3px 15px 3px 3px;
       }
+
+
+.voicelink {
+    background: #ffffff66;
+    color: #333;
+}
+.voicelink : hover {
+    text-decoration: none;
+}
+    .secondary, .secondary:hover {
+        color: #E67E22;
+    }
+
+    .missing, .missing:hover {
+        color: #7F8C8D;
+    }
+
+    .primary, .primary:hover {
+        color: #1ABC9C;
+    }
+
+    .size-warning, .size-warning:hover {
+        color: red;
+    }
 
       .voice-title {
           font-size: 1.4em;
@@ -98,7 +122,9 @@
               if (node.parentElement.classList.contains(VOICELINK_CLASS))
                   Parser.rebindEvents(node.parentElement);
               else
+              {
                   Parser.linkify(node);
+              }
           }
       },
 
@@ -110,6 +136,7 @@
           e.innerHTML = rjCode;
           e.target = "_blank";
           e.rel = "noreferrer";
+          e.classList.add(rjCode);
           e.setAttribute(RJCODE_ATTRIBUTE, rjCode.toUpperCase());
           e.addEventListener("mouseover", Popup.over);
           e.addEventListener("mouseout", Popup.out);
@@ -127,6 +154,11 @@
                   index: match.index,
                   value: match[0],
               });
+
+              globalCodes.push({
+                  index: match.index,
+                  value: match[0],
+              });
           }
 
           // Keep text in text node until first RJ code
@@ -135,6 +167,7 @@
           // Insert rest of text while linkifying RJ codes
           let prevNode = null;
           for (let i = 0; i < matches.length; ++i) {
+
               // Insert linkified RJ code
               const rjLinkNode = Parser.wrapRJCode(matches[i].value);
               textNode.parentNode.insertBefore(
@@ -181,6 +214,8 @@
       },
 
   }
+
+  var globalCodes = [];
 
   const Popup = {
       makePopup: function (e, rjCode) {
@@ -427,6 +462,32 @@
       document.head.appendChild(style);
 
       Parser.walkNodes(document.body);
+
+      // check index status
+      globalCodes.map(function(code){
+          let rjCode = code.value;
+
+            indexer.request(rjCode, function(status){
+
+                let primary = status.files[0].alive;
+                let secondary = status.files[1].alive;
+                let dlsiteBytes = status.fileSize * 1024 * 1024;
+                let gotLink = primary || secondary;
+                let hvdbBytes = primary ? status.files[0].size : secondary ? status.files[1].size : 0;
+                let warn = primary && (hvdbBytes / dlsiteBytes) < 0.7;
+                let codes = document.querySelectorAll('.' + rjCode);
+                codes.forEach(function(element){
+                    element.classList.add(primary ? 'primary' : secondary ? 'secondary' : 'missing');
+                    let warn = primary && (hvdbBytes / dlsiteBytes) < 0.7;
+                    if(warn) {
+                        element.classList.add('size-warning');
+                    }
+                });
+
+
+            });
+
+      });
 
       const observer = new MutationObserver(function (m) {
           for (let i = 0; i < m.length; ++i) {
