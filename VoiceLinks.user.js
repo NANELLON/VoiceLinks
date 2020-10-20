@@ -3,7 +3,7 @@
 // @namespace   Sanya
 // @description Makes RJ codes more useful.
 // @include     *://*/*
-// @version     2.1.0
+// @version     2.1.1
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
 // @updateURL   https://github.com/NANELLON/VoiceLinks/raw/master/VoiceLinks.user.js
@@ -155,10 +155,34 @@
                   value: match[0],
               });
 
-              globalCodes.push({
-                  index: match.index,
-                  value: match[0],
-              });
+              if(globalCodes.indexOf(match[0]) == -1) {
+                  globalCodes.push(match[0]);
+
+              // check index status
+
+                  let rjCode = match[0];
+
+                  indexer.request(rjCode, function(status){
+
+                      let primary = status.files[0].alive;
+                      let secondary = status.files[1].alive;
+                      let dlsiteBytes = status.fileSize * 1024 * 1024;
+                      let gotLink = primary || secondary;
+                      let hvdbBytes = primary ? status.files[0].size : secondary ? status.files[1].size : 0;
+                      let warn = primary && (hvdbBytes / dlsiteBytes) < 0.7;
+                      let codes = document.querySelectorAll('.' + rjCode);
+                      codes.forEach(function(element){
+                          element.classList.add(primary ? 'primary' : secondary ? 'secondary' : 'missing');
+                          let warn = primary && (hvdbBytes / dlsiteBytes) < 0.7;
+                          if(warn) {
+                              element.classList.add('size-warning');
+                          }
+                      });
+
+
+                  });
+
+              }
           }
 
           // Keep text in text node until first RJ code
@@ -463,32 +487,6 @@
 
       Parser.walkNodes(document.body);
 
-      // check index status
-      globalCodes.map(function(code){
-          let rjCode = code.value;
-
-            indexer.request(rjCode, function(status){
-
-                let primary = status.files[0].alive;
-                let secondary = status.files[1].alive;
-                let dlsiteBytes = status.fileSize * 1024 * 1024;
-                let gotLink = primary || secondary;
-                let hvdbBytes = primary ? status.files[0].size : secondary ? status.files[1].size : 0;
-                let warn = primary && (hvdbBytes / dlsiteBytes) < 0.7;
-                let codes = document.querySelectorAll('.' + rjCode);
-                codes.forEach(function(element){
-                    element.classList.add(primary ? 'primary' : secondary ? 'secondary' : 'missing');
-                    let warn = primary && (hvdbBytes / dlsiteBytes) < 0.7;
-                    if(warn) {
-                        element.classList.add('size-warning');
-                    }
-                });
-
-
-            });
-
-      });
-
       const observer = new MutationObserver(function (m) {
           for (let i = 0; i < m.length; ++i) {
               let addedNodes = m[i].addedNodes;
@@ -496,6 +494,7 @@
               for (let j = 0; j < addedNodes.length; ++j) {
                   Parser.walkNodes(addedNodes[j]);
               }
+
           }
       });
 
