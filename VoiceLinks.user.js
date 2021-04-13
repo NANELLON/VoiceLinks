@@ -3,7 +3,7 @@
 // @namespace   Sanya
 // @description Makes RJ codes more useful.
 // @include     *://*/*
-// @version     2.1.1
+// @version     2.1.2
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
 // @updateURL   https://github.com/NANELLON/VoiceLinks/raw/master/VoiceLinks.user.js
@@ -39,29 +39,33 @@
 
 
 .voicelink {
-    background: #ffffff66;
+    text-shadow: 1px 1px 1px #333;
     color: #333;
 }
 .voicelink : hover {
     text-decoration: none;
 }
-    .secondary, .secondary:hover {
-        color: #E67E22;
+    .voicelink.secondary, .voicelink.secondary:hover {
+        color: #E67E22!important;
     }
 
-    .missing, .missing:hover {
-        color: #7F8C8D;
+    .voicelink.missing, .voicelink.missing:hover {
+        color: #7F8C8D!important;
     }
 
-    .primary, .primary:hover {
-        color: #1ABC9C;
+    .voicelink.primary, .voicelink.primary:hover {
+        color: #1ABC9C!important;
     }
 
-    .size-warning, .size-warning:hover {
-        color: red;
+    .voicelink.size-warning, .voicelink.size-warning:hover {
+        color: red!important;
     }
 
-      .voice-title {
+    .voicelink.nonmega, .voicelink.nonmega:hover {
+        color: #3683d2!important;
+    }
+
+      .voicepopup .voice-title {
           font-size: 1.4em;
           font-weight: bold;
           text-align: center;
@@ -69,20 +73,13 @@
           display: block;
       }
 
-      .rjcode {
-          text-align: center;
-          font-size: 1.2em;
-          font-style: italic;
-          opacity: 0.3;
-      }
-
-      .error {
+      .voicepopup .error {
           height: 210px;
           line-height: 210px;
           text-align: center;
       }
 
-      .discord-dark {
+      .voicepopup.discord-dark {
           background-color: #36393f;
           color: #dcddde;
           font-size: 0.9375rem;
@@ -166,13 +163,13 @@
 
                       let primary = status.files[0].alive;
                       let secondary = status.files[1].alive;
+                      let nonMega = status.files[3].alive;
                       let dlsiteBytes = status.fileSize * 1024 * 1024;
-                      let gotLink = primary || secondary;
                       let hvdbBytes = primary ? status.files[0].size : secondary ? status.files[1].size : 0;
                       let warn = primary && (hvdbBytes / dlsiteBytes) < 0.7;
                       let codes = document.querySelectorAll('.' + rjCode);
                       codes.forEach(function(element){
-                          element.classList.add(primary ? 'primary' : secondary ? 'secondary' : 'missing');
+                          element.classList.add(primary ? 'primary' : secondary ? 'secondary' : nonMega ? 'nonmega' : 'missing');
                           let warn = primary && (hvdbBytes / dlsiteBytes) < 0.7;
                           if(warn) {
                               element.classList.add('size-warning');
@@ -257,6 +254,7 @@
 
                     let primary = status.files[0].alive;
                     let secondary = status.files[1].alive;
+                    let nonMega = status.files[3].alive;
                     let dlsiteBytes = status.fileSize * 1024 * 1024;
                     let gotLink = primary || secondary;
                     let hvdbBytes = primary ? status.files[0].size : secondary ? status.files[1].size : 0;
@@ -270,7 +268,6 @@
                   let html = `
                       <div>
                           <div class='voice-title'>${workInfo.title}</div>
-                          <div class='rjcode'>[${workInfo.rj}]</div>
                           <br />
                           Circle: <a>${workInfo.circle}</a>
                           <br />
@@ -294,7 +291,7 @@
                   if (workInfo.filesize)
                       html += `File size: ${workInfo.filesize}<br />`;
 
-                  html += `Link state: ${(gotLink ? Popup.humanFileSize(hvdbBytes) : 'missing') + (warn ? '⚠️️' : '')}<br /> `;
+                  html += `Link state: ${(gotLink ? Popup.humanFileSize(hvdbBytes) : nonMega ? 'unknown' : 'missing') + (warn ? '⚠️️' : '')}<br /> `;
 
                   html += "</div>"
                   popup.innerHTML = html;
