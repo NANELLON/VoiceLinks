@@ -27,7 +27,7 @@
           margin-bottom: 10px;
           box-shadow: 0 0 .125em 0 rgba(0,0,0,.5);
           border-radius: 0.5em;
-          background-color: inherit;
+          background-color: #777;
           padding: 10px;
       }
 
@@ -129,7 +129,7 @@
           var e;
           e = document.createElement("a");
           e.classList = VOICELINK_CLASS;
-          e.href = `https://www.dlsite.com/maniax/work/=/product_id/${rjCode}.html`
+          e.href = `https://www.dlsite.com/maniax/work/=/product_id/${rjCode}.html/?locale=ja_JP`
           e.innerHTML = rjCode;
           e.target = "_blank";
           e.rel = "noreferrer";
@@ -161,19 +161,11 @@
 
                   indexer.request(rjCode, function(status){
 
-                      let primary = status.files[0].alive;
-                      let secondary = status.files[1].alive;
-                      let nonMega = status.files[3].alive;
-                      let dlsiteBytes = status.fileSize * 1024 * 1024;
-                      let hvdbBytes = primary ? status.files[0].size : secondary ? status.files[1].size : 0;
-                      let warn = primary && (hvdbBytes / dlsiteBytes) < 0.7;
+                      let gotLink = status.links.length;
                       let codes = document.querySelectorAll('.' + rjCode);
                       codes.forEach(function(element){
-                          element.classList.add(primary ? 'primary' : secondary ? 'secondary' : nonMega ? 'nonmega' : 'missing');
-                          let warn = primary && (hvdbBytes / dlsiteBytes) < 0.7;
-                          if(warn) {
-                              element.classList.add('size-warning');
-                          }
+                          element.classList.add(gotLink ? 'primary' : 'missing');
+                        
                       });
 
 
@@ -252,14 +244,6 @@
 
                 indexer.request(rjCode, function(status){
 
-                    let primary = status.files[0].alive;
-                    let secondary = status.files[1].alive;
-                    let nonMega = status.files[3].alive;
-                    let dlsiteBytes = status.fileSize * 1024 * 1024;
-                    let gotLink = primary || secondary;
-                    let hvdbBytes = primary ? status.files[0].size : secondary ? status.files[1].size : 0;
-                    let warn = primary && (hvdbBytes / dlsiteBytes) < 0.7;
-
                   const imgContainer = document.createElement("div")
                   const img = document.createElement("img");
                   img.src = workInfo.img;
@@ -290,8 +274,6 @@
 
                   if (workInfo.filesize)
                       html += `File size: ${workInfo.filesize}<br />`;
-
-                  html += `Link state: ${(gotLink ? Popup.humanFileSize(hvdbBytes) : nonMega ? 'unknown' : 'missing') + (warn ? '⚠️️' : '')}<br /> `;
 
                   html += "</div>"
                   popup.innerHTML = html;
@@ -354,7 +336,9 @@
 
   const indexer = {
       request: function (rjCode, callback) {
-        const url = `https://api.xn--4qs.club/work/${rjCode}/status`;
+        const url = `https://api.xn--4qs.club/work/${rjCode}/fichier`;
+          console.log(url);
+        //const url = `https://localhost:44386/work/${rjCode}/fichier`;
         getXmlHttpRequest()({
             method: "GET",
             url,
