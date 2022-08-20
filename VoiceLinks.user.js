@@ -17,27 +17,26 @@
   const VOICELINK_CLASS = 'voicelink'
   const RJCODE_ATTRIBUTE = 'rjcode'
   const css = `
-      .voicepopup {
-          min-width: 600px !important;
-          z-index: 50000 !important;
-          max-width: 80% !important;
-          min-height: 64px;
-          position: fixed !important;
-          line-height: 1.4em;
-          font-size: 1.1em;
-          margin-bottom: 10px;
-          box-shadow: 0 0 4px 0 rgba(0,0,0,.5);
-          border-radius: 16px;
-          background-color: white;
-          padding: 10px;
-      }
+    .voicepopup {
+        min-width: 600px !important;
+        z-index: 50000 !important;
+        max-width: 80% !important;
+        min-height: 64px;
+        position: fixed !important;
+        line-height: 1.4em;
+        font-size: 1.1em;
+        margin-bottom: 10px;
+        box-shadow: 0 0 4px 0 rgba(0,0,0,.5);
+        border-radius: 16px;
+        background-color: white;
+        padding: 10px;
+    }
 
-      .voicepopup img {
-          width: 270px;
-          height: auto;
-          margin: 3px 15px 3px 3px;
-      }
-
+    .voicepopup img {
+        width: 270px;
+        height: auto;
+        margin: 3px 15px 3px 3px;
+    }
 
     .voicelink {
         text-shadow: 1px 1px 1px #333;
@@ -45,21 +44,6 @@
     }
     .voicelink : hover {
         text-decoration: none;
-    }
-    .voicelink.secondary, .voicelink.secondary:hover {
-        color: #E67E22!important;
-    }
-
-    .voicelink.missing, .voicelink.missing:hover {
-        color: #7F8C8D!important;
-    }
-
-    .voicelink.primary, .voicelink.primary:hover {
-        color: #1ABC9C!important;
-    }
-
-    .voicelink.size-warning, .voicelink.size-warning:hover {
-        color: red!important;
     }
 
     .voicelink.nonmega, .voicelink.nonmega:hover {
@@ -220,38 +204,37 @@
         if (workInfo === null)
           popup.innerHTML = "<div class='error'>Work not found.</span>"
         else {
-            const imgContainer = document.createElement('div')
-            const img = document.createElement('img')
-            img.src = workInfo.img
-            imgContainer.appendChild(img)
+          const imgContainer = document.createElement('div')
+          const img = document.createElement('img')
+          img.src = workInfo.img
+          imgContainer.appendChild(img)
 
-            let html = `
+          let html = `
                       <div>
                           <div class='voice-title'>${workInfo.title}</div>
                           <br />
                           Circle: <a>${workInfo.circle}</a>
                           <br />
                   `
-            if (workInfo.date) html += `Release: <a>${workInfo.date}</a> <br />`
-            else if (workInfo.dateAnnounce)
-              html += `Scheduled Release: <a>${workInfo.dateAnnounce}</a> <br />`
+          if (workInfo.date) html += `Release: <a>${workInfo.date}</a> <br />`
+          else if (workInfo.dateAnnounce)
+            html += `Scheduled Release: <a>${workInfo.dateAnnounce}</a> <br />`
 
-            html += `Age rating: <a>${workInfo.rating}</a><br />`
+          html += `Age rating: <a>${workInfo.rating}</a><br />`
 
-            if (workInfo.cv) html += `CV: <a>${workInfo.cv}</a> <br />`
+          if (workInfo.cv) html += `CV: <a>${workInfo.cv}</a> <br />`
 
-            html += `Tags: <a>`
-            workInfo.tags.forEach((tag) => {
-              html += tag + '\u3000'
-            })
-            html += '</a><br />'
+          html += `Tags: <a>`
+          workInfo.tags.forEach((tag) => {
+            html += tag + '\u3000'
+          })
+          html += '</a><br />'
 
-            if (workInfo.filesize)
-              html += `File size: ${workInfo.filesize}<br />`
+          if (workInfo.filesize) html += `File size: ${workInfo.filesize}<br />`
 
-            html += '</div>'
-            popup.innerHTML = html
-            popup.insertBefore(imgContainer, popup.childNodes[0])
+          html += '</div>'
+          popup.innerHTML = html
+          popup.insertBefore(imgContainer, popup.childNodes[0])
         }
 
         Popup.move(e)
