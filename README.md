@@ -1,5 +1,5 @@
 # VoiceLinks
-Userscript for 4chan to make DLsite RJ codes more useful.
+Userscript to make DLsite RJ codes more useful.
 
 ## Installing
 
